@@ -1,1 +1,540 @@
-# cambios-brlves
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Calculadora P2P · Brasil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #050810;
+      --ink:     #e8edf8;
+      --muted:   #4a5568;
+      --br:      #00e676;
+      --ve:      #5b9cf6;
+      --shadow:  0 20px 60px rgba(0,0,0,0.7);
+      --glow-br: 0 0 60px rgba(0,230,118,0.18), 0 0 120px rgba(0,230,118,0.08);
+      --glow-ve: 0 0 60px rgba(91,156,246,0.18), 0 0 120px rgba(91,156,246,0.08);
+    }
+
+    html, body {
+      min-height: 100dvh;
+      background: var(--bg);
+      font-family: 'Inter', sans-serif;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── FONDO: orbes animados ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(ellipse 70% 55% at 15% 5%,  rgba(0,230,118,0.18) 0%, transparent 65%),
+        radial-gradient(ellipse 60% 65% at 85% 90%, rgba(91,156,246,0.18) 0%, transparent 65%),
+        radial-gradient(ellipse 45% 40% at 70% 25%, rgba(139,92,246,0.10) 0%, transparent 55%),
+        radial-gradient(ellipse 35% 50% at 30% 75%, rgba(0,180,200,0.08) 0%, transparent 50%);
+      animation: orbs 12s ease-in-out infinite alternate;
+    }
+    @keyframes orbs {
+      0%   { opacity: 1; transform: scale(1)   translateY(0px);   }
+      50%  { opacity: 0.8; transform: scale(1.04) translateY(-12px); }
+      100% { opacity: 1; transform: scale(1)   translateY(0px);   }
+    }
+
+    /* ── GRID SUTIL ── */
+    body::after {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%);
+    }
+
+    .wrapper {
+      position: relative; z-index: 1;
+      max-width: 440px;
+      margin: 0 auto;
+      padding: 52px 18px 70px;
+      display: flex; flex-direction: column; gap: 20px;
+    }
+
+    /* ── HEADER ── */
+    header { text-align: center; margin-bottom: 4px; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: var(--muted);
+      font-family: 'DM Mono', monospace; font-size: 10px;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      padding: 5px 15px; border-radius: 100px; margin-bottom: 18px;
+      backdrop-filter: blur(16px);
+    }
+    .pill span { opacity: 0.3; }
+    h1 {
+      font-size: clamp(30px, 9vw, 42px); font-weight: 800;
+      line-height: 1.04; letter-spacing: -0.035em; color: var(--ink);
+    }
+    h1 em { font-style: normal; color: rgba(255,255,255,0.25); }
+
+    /* ── GLASS CARDS ── */
+    .result-card {
+      position: relative;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 26px; overflow: hidden;
+      backdrop-filter: blur(32px) saturate(160%);
+      -webkit-backdrop-filter: blur(32px) saturate(160%);
+      box-shadow: var(--shadow);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .result-card::before {
+      /* inner glow top edge */
+      content: '';
+      position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+      border-radius: 100%;
+      pointer-events: none; z-index: 2;
+    }
+    .result-card.brasil {
+      box-shadow: var(--shadow), var(--glow-br);
+      border-color: rgba(0,230,118,0.18);
+    }
+    .result-card.brasil::before {
+      background: linear-gradient(90deg, transparent, rgba(0,230,118,0.6), transparent);
+    }
+    .result-card.venezuela {
+      box-shadow: var(--shadow), var(--glow-ve);
+      border-color: rgba(91,156,246,0.18);
+    }
+    .result-card.venezuela::before {
+      background: linear-gradient(90deg, transparent, rgba(91,156,246,0.6), transparent);
+    }
+
+    .card-inner {
+      padding: 24px 22px 26px;
+      display: flex; flex-direction: column; gap: 18px;
+    }
+
+    /* card header */
+    .card-head { display: flex; align-items: center; justify-content: space-between; }
+    .card-title { display: flex; align-items: center; gap: 10px; }
+    .flag { font-size: 26px; line-height: 1; }
+    .country { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
+    .country.br { color: var(--br); }
+    .country.ve { color: var(--ve); }
+    .badge {
+      font-family: 'DM Mono', monospace; font-size: 11px;
+      padding: 5px 13px; border-radius: 100px;
+      color: #050810; letter-spacing: 0.05em; font-weight: 700;
+    }
+    .badge.br { background: var(--br); box-shadow: 0 0 14px rgba(0,230,118,0.5); }
+    .badge.ve { background: var(--ve); box-shadow: 0 0 14px rgba(91,156,246,0.5); }
+
+    /* blocks */
+    .block { display: flex; flex-direction: column; gap: 5px; }
+    .blabel {
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--muted);
+    }
+    .brow { display: flex; align-items: baseline; gap: 7px; }
+
+    /* input */
+    .input-row { display: flex; align-items: center; gap: 10px; }
+    .curr-tag {
+      font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 10px; padding: 9px 13px;
+      color: var(--muted); flex-shrink: 0; white-space: nowrap;
+    }
+
+    .local-val {
+      font-family: 'DM Mono', monospace; font-size: clamp(22px, 6.5vw, 30px);
+      font-weight: 500; letter-spacing: -0.025em;
+    }
+    .local-val.br { color: var(--br); }
+    .local-val.ve { color: var(--ve); }
+    .local-unit {
+      font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 600; opacity: 0.45;
+    }
+    .local-unit.br { color: var(--br); }
+    .local-unit.ve { color: var(--ve); }
+
+    /* divider */
+    .div { height: 1px; background: rgba(255,255,255,0.07); }
+
+    /* big result */
+    .ves-val {
+      font-family: 'DM Mono', monospace;
+      font-size: clamp(36px, 11vw, 52px); font-weight: 500;
+      letter-spacing: -0.03em; line-height: 1.02;
+      color: var(--ink); word-break: break-all;
+    }
+    .ves-unit {
+      font-family: 'DM Mono', monospace;
+      font-size: 15px; font-weight: 600; color: var(--muted);
+    }
+
+    /* cross rate */
+    .cross {
+      font-family: 'DM Mono', monospace; font-size: 11px;
+      color: var(--muted); padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+
+    /* accent top bar */
+    .bar-br {
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--br), #00ffaa, var(--br), transparent);
+    }
+    .bar-ve {
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--ve), #a5c8ff, var(--ve), transparent);
+    }
+
+    /* separator */
+    .sep-row { display: flex; align-items: center; gap: 12px; margin: 4px 0; }
+    .sep-row .line { flex: 1; height: 1px; background: rgba(255,255,255,0.07); }
+    .sep-row .sep-label {
+      font-family: 'DM Mono', monospace; font-size: 10px;
+      letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted);
+    }
+
+    /* shimmer */
+    @keyframes shimmer {
+      0%  { background-position: -400px 0; }
+      100%{ background-position:  400px 0; }
+    }
+    .shimmer {
+      background: linear-gradient(90deg,
+        rgba(255,255,255,0.04) 25%,
+        rgba(255,255,255,0.11) 50%,
+        rgba(255,255,255,0.04) 75%);
+      background-size: 800px 100%; animation: shimmer 1.6s infinite;
+      border-radius: 6px; color: transparent !important;
+      min-width: 140px; display: inline-block; user-select: none;
+    }
+
+    /* fade in */
+    .fade { opacity: 0; transform: translateY(18px); animation: up 0.55s ease forwards; }
+    @keyframes up { to { opacity: 1; transform: translateY(0); } }
+    header                      { animation-delay: 0.00s; }
+    .result-card:nth-of-type(1) { animation-delay: 0.10s; }
+    .sep-row                    { animation-delay: 0.16s; }
+    .result-card:nth-of-type(2) { animation-delay: 0.22s; }
+
+    .status { display: none; }
+    input[type=number] { -moz-appearance: textfield; }
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  </style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <header class="fade">
+    <div class="pill">P2P <span>·</span> Brasil</div>
+    <h1>Calculadora<br /><em>de cambio</em></h1>
+  </header>
+
+  <!-- SECCIÓN 1: BRL → VES -->
+  <div class="result-card brasil fade">
+    <div class="bar-br"></div>
+    <div class="card-inner">
+
+      <div class="card-head">
+        <div class="card-title">
+          <span class="flag">🇧🇷</span>
+          <span class="country br">Brasil</span>
+        </div>
+        <span class="badge br" id="badge">—%</span>
+      </div>
+
+      <div class="block">
+        <span class="blabel">Reales que envías</span>
+        <div class="input-row">
+          <span class="curr-tag">R$ BRL</span>
+          <input id="amount" type="number" inputmode="decimal"
+                 placeholder="0.00" min="0" step="any"
+                 oninput="calculate()" autofocus
+                 style="width:100%; border:none; outline:none; background:transparent;
+                        font-family:'DM Mono',monospace; font-size:clamp(28px,8vw,40px);
+                        font-weight:500; color:var(--br); letter-spacing:-0.025em;" />
+        </div>
+      </div>
+
+      <div class="block">
+        <span class="blabel">Equivalente en dólares</span>
+        <div class="brow">
+          <span class="local-val br" id="local-brl-usd">——</span>
+          <span class="local-unit br">USD $</span>
+        </div>
+      </div>
+
+      <div class="div"></div>
+
+      <div class="block">
+        <span class="blabel">Recibes en bolívares</span>
+        <div class="brow">
+          <span class="ves-val shimmer" id="result-ves">——</span>
+          <span class="ves-unit"> Bs.</span>
+        </div>
+      </div>
+
+      <div class="cross" id="cross-rate" style="display:none;">1 BRL ≈ — VES · USDT paralelo</div>
+
+    </div>
+  </div>
+
+  <!-- SEPARADOR -->
+  <div class="sep-row fade">
+    <div class="line"></div>
+    <span class="sep-label">Enviar Bs. → BRL</span>
+    <div class="line"></div>
+  </div>
+
+  <!-- SECCIÓN 2: VES → BRL -->
+  <div class="result-card venezuela fade">
+    <div class="bar-ve"></div>
+    <div class="card-inner">
+
+      <div class="card-head">
+        <div class="card-title">
+          <span class="flag">🇻🇪</span>
+          <span class="country ve">Venezuela</span>
+        </div>
+        <span class="badge ve" id="badge-ves">—%</span>
+      </div>
+
+      <div class="block">
+        <span class="blabel">Bolívares que envías</span>
+        <div class="input-row">
+          <span class="curr-tag">Bs.</span>
+          <input id="amount-ves" type="number" inputmode="decimal"
+                 placeholder="0" min="0" step="any"
+                 oninput="calculateVES()"
+                 style="width:100%; border:none; outline:none; background:transparent;
+                        font-family:'DM Mono',monospace; font-size:clamp(28px,8vw,40px);
+                        font-weight:500; color:var(--ve); letter-spacing:-0.025em;" />
+        </div>
+      </div>
+
+      <div class="block">
+        <span class="blabel">Equivalente en dólares</span>
+        <div class="brow">
+          <span class="local-val ve" id="local-ves-usd">——</span>
+          <span class="local-unit ve">USD $</span>
+        </div>
+      </div>
+
+      <div class="div"></div>
+
+      <div class="block">
+        <span class="blabel">Reales que recibes</span>
+        <div class="brow">
+          <span class="ves-val shimmer" id="result-brl">——</span>
+          <span class="ves-unit"> R$</span>
+        </div>
+      </div>
+
+      <div class="cross" id="cross-rate-ves" style="display:none;">1 VES ≈ — BRL · USDT paralelo</div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="status" style="display:none;">
+  <span class="dot loading" id="dot"></span>
+  <span id="st-usdt">Cargando USDT/VES…</span>
+  <span class="sep">|</span>
+  <span id="st-brl">Cargando BRL…</span>
+</div>
+
+<script>
+/* =========================================================
+   STATE
+========================================================= */
+const S = {
+  usdtVes : null,   // USDT/VES tasa paralela  (ve.dolarapi.com)
+  usdBrl  : null,   // USD/BRL                 (dolarapi.com)
+  brlVes  : null,   // cross: 1 BRL = X VES
+  ready   : false,
+};
+
+/* =========================================================
+   FETCH USDT/VES — paralela (ve.dolarapi.com)
+========================================================= */
+async function fetchUSDT() {
+  const r = await fetch('https://ve.dolarapi.com/v1/dolares/paralelo', { cache: 'no-cache' });
+  if (!r.ok) throw new Error('USDT fetch failed');
+  const d = await r.json();
+  const v = Number(d?.promedio ?? d?.precio ?? d?.venta ?? 0);
+  if (v < 1) throw new Error('bad value');
+  return v;
+}
+
+/* =========================================================
+   FETCH USD/BRL — tasa de mercado + margen fijo de +0.10
+   ─────────────────────────────────────────────────────────
+   Tasa real actual ≈ 5.05  →  mostramos ≈ 5.15 (+ 0.10)
+   Fuentes en orden:
+   1. Binance   → USDTBRL bidPrice (más confiable)
+   2. AwesomeAPI → USDBRL bid
+   3. Fallback fijo → 5.05 (suma igualmente el margen → 5.15)
+========================================================= */
+const BRL_MARGIN = 0.10; // margen siempre por encima del mercado
+
+async function fetchBRL() {
+  // Fuente 1 — Binance USDT/BRL
+  try {
+    const r = await fetch('https://api.binance.com/api/v3/ticker/bookTicker?symbol=USDTBRL', { cache: 'no-cache' });
+    if (r.ok) {
+      const d = await r.json();
+      const v = Number(d?.bidPrice ?? 0);
+      if (v > 1) return v;
+    }
+  } catch (_) {}
+
+  // Fuente 2 — AwesomeAPI
+  try {
+    const r = await fetch('https://economia.awesomeapi.com.br/last/USD-BRL', { cache: 'no-cache' });
+    if (r.ok) {
+      const d = await r.json();
+      const v = Number(d?.USDBRL?.bid ?? 0);
+      if (v > 1) return v;
+    }
+  } catch (_) {}
+
+  // Fallback fijo
+  return 5.05;
+}
+
+async function loadRates() {
+  const dot = document.getElementById('dot');
+  dot.className = 'dot loading';
+
+  const [usdtRes, brlRes] = await Promise.allSettled([fetchUSDT(), fetchBRL()]);
+
+  if (usdtRes.status === 'fulfilled') {
+    S.usdtVes = usdtRes.value;
+    document.getElementById('st-usdt').textContent =
+      `USDT/VES: ${fmt(S.usdtVes, 2)} Bs`;
+    dot.className = 'dot';
+  } else {
+    document.getElementById('st-usdt').textContent = 'USDT/VES: error';
+    dot.className = 'dot error';
+  }
+
+  // Tasa real + margen
+  const brlRaw = brlRes.status === 'fulfilled' ? brlRes.value : 5.05;
+  S.usdBrl = brlRaw + BRL_MARGIN;
+
+  document.getElementById('st-brl').textContent =
+    `USD/BRL: ${fmt(S.usdBrl, 2)} (mercado ${fmt(brlRaw, 2)} + ${fmt(BRL_MARGIN, 2)})`;
+
+  if (S.usdtVes && S.usdBrl) {
+    S.brlVes = S.usdtVes / S.usdBrl;
+    document.getElementById('cross-rate').textContent =
+      `1 BRL ≈ ${fmt(S.brlVes, 4)} VES · USDT paralelo · ve.dolarapi.com`;
+    document.getElementById('cross-rate-ves').textContent =
+      `1 VES ≈ ${fmt(1 / S.brlVes, 6)} BRL · USDT paralelo · ve.dolarapi.com`;
+  }
+
+  S.ready = true;
+  document.querySelectorAll('.shimmer').forEach(el => el.classList.remove('shimmer'));
+  calculate();
+  calculateVES();
+}
+
+/* =========================================================
+   CÁLCULO
+========================================================= */
+function calculate() {
+  if (!S.ready) return;
+
+  const raw   = document.getElementById('amount').value;
+  const brl   = parseFloat(raw);
+  const empty = !raw || isNaN(brl) || brl <= 0;
+
+  const elVes   = document.getElementById('result-ves');
+  const elUSD   = document.getElementById('local-brl-usd');
+  const elBadge = document.getElementById('badge');
+
+  if (empty) {
+    elVes.textContent   = '——';
+    elUSD.textContent   = '——';
+    elBadge.textContent = '—%';
+    return;
+  }
+
+  const usd  = brl / S.usdBrl;
+  const comm = brl < 1499 ? 0.05 : 0.08;
+  const ves  = usd * S.usdtVes * (1 - comm);
+
+  elUSD.textContent   = fmt(usd, 2);
+  elVes.textContent   = Math.round(ves).toLocaleString('es-VE');
+  elBadge.textContent = (comm * 100).toFixed(0) + '%';
+}
+
+/* =========================================================
+   CÁLCULO VES → BRL
+   ─────────────────────────────────────────────────────────
+   Cliente envía X Bs.
+   USD = Bs ÷ USDT/VES
+   BRL = USD × BRL_RATE
+   Comisión: ≤ 1500 BRL resultado → 5% | > 1500 → 8%
+   (aplicamos la comisión sobre el BRL bruto)
+========================================================= */
+function calculateVES() {
+  if (!S.ready) return;
+
+  const raw   = document.getElementById('amount-ves').value;
+  const ves   = parseFloat(raw);
+  const empty = !raw || isNaN(ves) || ves <= 0;
+
+  const elBRL   = document.getElementById('result-brl');
+  const elUSD   = document.getElementById('local-ves-usd');
+  const elBadge = document.getElementById('badge-ves');
+
+  if (empty) {
+    elBRL.textContent   = '——';
+    elUSD.textContent   = '——';
+    elBadge.textContent = '—%';
+    return;
+  }
+
+  const usd    = ves / S.usdtVes;
+  const comm   = 0.13;
+  const brlNet = usd * S.usdBrl * (1 - comm);
+
+  elUSD.textContent   = fmt(usd, 2);
+  elBRL.textContent   = fmt(brlNet, 2);
+  elBadge.textContent = '10%';
+}
+
+/* =========================================================
+   HELPERS
+========================================================= */
+function fmt(n, dec) {
+  return Number(n).toLocaleString('es-VE', {
+    minimumFractionDigits: dec,
+    maximumFractionDigits: dec,
+  });
+}
+
+/* =========================================================
+   BOOT
+========================================================= */
+loadRates();
+</script>
+</body>
+</html>
